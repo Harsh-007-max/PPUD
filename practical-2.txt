@@ -1,0 +1,222 @@
+---------------------program-6----------------------
+DELIMITER $$
+
+CREATE OR REPLACE TRIGGER program_6 BEFORE INSERT
+    ON ACCOUNT
+    FOR EACH ROW BEGIN
+	DECLARE total_balance INT;
+	SET @total_balance = (SELECT SUM(baslance) FROM ACCOUNT); 
+    END$$
+
+DELIMITER ;
+-------------------program-7-------------------------
+
+
+DELIMITER $$
+
+CREATE
+    TRIGGER program_7 BEFORE INSERT ON `student_mark`
+    FOR EACH ROW 
+    BEGIN
+	SET new.total = new.wdt + new.fsd + new.cn + new.dotnet;
+	SET new.percentage = new.total/4;
+	IF new.percentage <=40 THEN
+		SET new.grade = 'fail';
+	ELSEIF new.percentage <=55 THEN
+		SET new.grade = 'D';
+	ELSEIF new.percentage <=70 THEN
+		SET new.grade = 'C';
+	ELSEIF new.percentage <=85 THEN
+		SET new.grade = 'B';
+	ELSE
+		SET new.grade = 'A';
+	END IF;
+    END$$
+
+DELIMITER ;
+
+------------------program-8--------------------
+
+DELIMITER $$
+
+CREATE OR REPLACE 
+    TRIGGER `program_8` AFTER UPDATE
+    ON `product`
+    FOR EACH ROW BEGIN
+	IF new.price !=old.price THEN
+		UPDATE product_price_history SET price = new.price WHERE pid = new.pid;
+	END IF;
+    END$$
+
+DELIMITER ;
+----------------------------------------------
+DELIMITER $$
+
+CREATE OR REPLACE 
+    TRIGGER insert_product_trigger AFTER INSERT
+    ON product
+    FOR EACH ROW BEGIN
+	INSERT INTO product_price_history VALUES(new.pid,new.price,new.p_type);
+    END$$
+
+DELIMITER ;
+
+-------------program-9------------------
+
+DELIMITER $$
+
+CREATE OR REPLACE 
+    TRIGGER `program_9` AFTER DELETE
+    ON `product`
+    FOR EACH ROW BEGIN
+	DELETE FROM product_price_history WHERE p_type = old.p_type;
+    END$$
+DELIMITER ;
+
+----------program-10------------------
+
+DELIMITER $$
+CREATE PROCEDURE program_10()
+	BEGIN
+		SELECT p_type FROM product GROUP BY p_type;
+	END$$
+
+DELIMITER ;
+
+
+------------program-11---------------
+
+
+DELIMITER $$
+CREATE 
+    PROCEDURE program_11()
+	BEGIN
+		UPDATE product SET price +=price*0.05;
+	END$$
+DELIMITER ;
+
+--------------program-12-------------------------
+DELIMITER $$
+
+CREATE PROCEDURE porogram_12()
+	BEGIN
+		DECLARE dn VARCHAR(50);
+		DECLARE total INT;
+		DECLARE done INT DEFAULT 0;
+		DECLARE cur CURSOR FOR SELECT dept,SUM(salary) FROM employee GROUP BY dept;
+		DECLARE CONTINUE HANDLER FOR NOT FOUND SET done=1;
+		OPEN cur;
+		getsal:LOOP
+		IF done=1 THEN
+			LEAVE getsal;
+		END IF;
+		FETCH cur INTO dn,total;
+		INSERT INTO empbackup VALUES(dn,total);
+		END LOOP;
+		CLOSE cur;
+	END$$
+
+DELIMITER ;
+---------------------program-13-----------------------
+DELIMITER $$
+
+CREATE
+    PROCEDURE program_13()
+	BEGIN
+		DECLARE an INT(10);
+		DECLARE a_type VARCHAR(20);
+		DECLARE done INT DEFAULT 0;
+		DECLARE cur CURSOR FOR SELECT ano,atype FROM ACCOUNT WHERE atype='saving';
+		DECLARE CONTINUE HANDLER FOR NOT FOUND SET done=1;
+		OPEN cur;
+		getsaveacc:LOOP
+		IF done=1 THEN
+			LEAVE getsaveacc;
+		END IF;
+		FETCH cur INTO an,a_type;
+		INSERT INTO saveaccount VALUES(an,a_type);
+		DELETE FROM ACCOUNT WHERE atype='saving';
+		END LOOP;
+		CLOSE cur;
+	END$$
+
+DELIMITER ;
+-----------------program-14-----------------------------
+DELIMITER $$
+
+CREATE
+    PROCEDURE program_14()
+	BEGIN
+		DECLARE PI VARCHAR(50) DEFAULT ' ';
+		DECLARE done INT DEFAULT 0;
+		DECLARE pn VARCHAR(20) DEFAULT ' ';
+		DECLARE cur CURSOR FOR SELECT p_name FROM product WHERE price > 1000;
+		DECLARE CONTINUE HANDLER FOR NOT FOUND SET done=1;
+		OPEN cur;
+		get_name:LOOP
+		IF done=1 THEN
+			LEAVE get_name;
+		END IF;
+		FETCH cur INTO pn;
+		SET PI = CONCAT(pn,' ',PI);
+		END LOOP;
+		SELECT PI;
+		CLOSE cur;
+	END$$
+
+DELIMITER ;
+------------------program-15-----------------------------------
+DELIMITER $$
+
+SET GLOBAL event_scheduler = ON$$
+
+CREATE EVENT program_15 ON SCHEDULE EVERY 10 MINUTE
+DO 
+	BEGIN
+		DECLARE ID INT(20);
+		DECLARE nm VARCHAR(20);
+		DECLARE p FLOAT;
+		DECLARE q INT;
+		DECLARE done INT DEFAULT 0;
+		DECLARE cur CURSOR FOR SELECT pid,pname,price,qty FROM product WHERE qty<20;
+		DECLARE CONTINUE HANDLER FOR NOT FOUND SET done=1;
+		OPEN cur;
+		TRUNCATE TABLE less_product_qty;
+		getdata:LOOP
+		IF done=1 THEN
+			LEAVE getdata;
+		END IF;
+		FETCH cur INTO id,nm,p,q;
+		INSERT INTO less_product_qty VALUES(id,nm,p,q);
+		END LOOP;
+		CLOSE cur;
+	END$$
+
+DELIMITER ;
+---------------------program-16------------------------------
+DELIMITER $$
+
+CREATE
+    PROCEDURE program_16()
+	BEGIN
+		DECLARE id CHAR(10);
+		DECLARE a INT;
+		DECLARE t DATE;
+		DECLARE max_qty INT DEFAULT 0;
+		DECLARE done INT DEFAULT 0;
+		DECLARE cur CURSOR FOR SELECT pid,qty,ptyme FROM product WHERE ptyme=CURDATE();
+		DECLARE CONTINUE HANDLER FOR NOT FOUND SET done=1;
+		OPEN cur;
+		get_data:LOOP
+		IF done=1 THEN
+			LEAVE get_data;
+		END IF;
+		FETCH cur INTO id,q,t;
+		IF q>max_qty THEN
+			SET max_qty = q;
+			SET cid = id;
+		END IF;
+		END LOOP;
+		CLOSE cur;
+	END$$
+DELIMITER ;
